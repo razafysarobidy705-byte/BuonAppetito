@@ -17,11 +17,18 @@ import com.teamsasa.buonappetito.ui.theme.*
 import com.teamsasa.buonappetito.viewmodel.AuthViewModel
 
 @Composable
-fun RegisterScreen(viewModel: AuthViewModel, onRegisterSuccess: () -> Unit, onNavigateToLogin: () -> Unit) {
+fun RegisterScreen(
+    viewModel: AuthViewModel,
+    onRegisterSuccess: () -> Unit,
+    onNavigateToLogin: () -> Unit
+) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    
+    // Correction : Type explicite ': Boolean' pour résoudre l'erreur de délégation
+    val isLoading: Boolean by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error: String? by viewModel.error.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -31,7 +38,11 @@ fun RegisterScreen(viewModel: AuthViewModel, onRegisterSuccess: () -> Unit, onNa
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Créer un compte", style = EpicureanTypography.displayLarge, color = EpicureanPrimary)
+        Text(
+            text = "Créer un compte",
+            style = EpicureanTypography.displayLarge,
+            color = EpicureanPrimary
+        )
         
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -40,7 +51,8 @@ fun RegisterScreen(viewModel: AuthViewModel, onRegisterSuccess: () -> Unit, onNa
             onValueChange = { name = it },
             label = { Text("Nom complet") },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            singleLine = true
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -50,7 +62,8 @@ fun RegisterScreen(viewModel: AuthViewModel, onRegisterSuccess: () -> Unit, onNa
             onValueChange = { email = it },
             label = { Text("Email") },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            singleLine = true
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -61,8 +74,19 @@ fun RegisterScreen(viewModel: AuthViewModel, onRegisterSuccess: () -> Unit, onNa
             label = { Text("Mot de passe") },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            singleLine = true
         )
+
+        // Affichage de l'erreur si elle existe
+        error?.let { errorMessage ->
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 8.dp),
+                style = EpicureanTypography.bodySmall
+            )
+        }
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -71,14 +95,30 @@ fun RegisterScreen(viewModel: AuthViewModel, onRegisterSuccess: () -> Unit, onNa
             modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = EpicureanPrimary),
-            enabled = !isLoading
+            enabled = !isLoading && name.isNotBlank() && email.isNotBlank() && password.length >= 6
         ) {
-            if (isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-            else Text("S'inscrire", style = EpicureanTypography.titleMedium)
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text(
+                    text = "S'inscrire",
+                    style = EpicureanTypography.titleMedium
+                )
+            }
         }
 
-        TextButton(onClick = onNavigateToLogin, modifier = Modifier.padding(top = 16.dp)) {
-            Text("Déjà un compte ? Se connecter", color = EpicureanPrimary)
+        TextButton(
+            onClick = onNavigateToLogin,
+            modifier = Modifier.padding(top = 16.dp)
+        ) {
+            Text(
+                text = "Déjà un compte ? Se connecter",
+                color = EpicureanPrimary
+            )
         }
     }
 }

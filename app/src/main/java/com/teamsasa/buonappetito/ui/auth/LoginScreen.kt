@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -16,10 +17,17 @@ import com.teamsasa.buonappetito.ui.theme.*
 import com.teamsasa.buonappetito.viewmodel.AuthViewModel
 
 @Composable
-fun LoginScreen(viewModel: AuthViewModel, onLoginSuccess: () -> Unit, onNavigateToRegister: () -> Unit) {
+fun LoginScreen(
+    viewModel: AuthViewModel,
+    onLoginSuccess: () -> Unit,
+    onNavigateToRegister: () -> Unit
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    
+    // Collecte des états du ViewModel avec délégués explicites
     val isLoading: Boolean by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error: String? by viewModel.error.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -29,8 +37,16 @@ fun LoginScreen(viewModel: AuthViewModel, onLoginSuccess: () -> Unit, onNavigate
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Bienvenue sur", style = EpicureanTypography.bodyLarge, color = TextMuted)
-        Text("BuonAppetito", style = EpicureanTypography.displayLarge, color = EpicureanPrimary)
+        Text(
+            text = "Bienvenue sur",
+            style = EpicureanTypography.bodyLarge,
+            color = TextMuted
+        )
+        Text(
+            text = "BuonAppetito",
+            style = EpicureanTypography.displayLarge,
+            color = EpicureanPrimary
+        )
         
         Spacer(modifier = Modifier.height(48.dp))
 
@@ -39,7 +55,8 @@ fun LoginScreen(viewModel: AuthViewModel, onLoginSuccess: () -> Unit, onNavigate
             onValueChange = { email = it },
             label = { Text("Email") },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            singleLine = true
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -50,8 +67,19 @@ fun LoginScreen(viewModel: AuthViewModel, onLoginSuccess: () -> Unit, onNavigate
             label = { Text("Mot de passe") },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            singleLine = true
         )
+
+        // Affichage de l'erreur si elle existe
+        error?.let { errorMessage ->
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 8.dp),
+                style = EpicureanTypography.bodySmall
+            )
+        }
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -60,14 +88,30 @@ fun LoginScreen(viewModel: AuthViewModel, onLoginSuccess: () -> Unit, onNavigate
             modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = EpicureanPrimary),
-            enabled = !isLoading
+            enabled = !isLoading && email.isNotBlank() && password.isNotBlank()
         ) {
-            if (isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-            else Text("Se connecter", style = EpicureanTypography.titleMedium)
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text(
+                    text = "Se connecter",
+                    style = EpicureanTypography.titleMedium
+                )
+            }
         }
 
-        TextButton(onClick = onNavigateToRegister, modifier = Modifier.padding(top = 16.dp)) {
-            Text("Pas encore de compte ? S'inscrire", color = EpicureanPrimary)
+        TextButton(
+            onClick = onNavigateToRegister,
+            modifier = Modifier.padding(top = 16.dp)
+        ) {
+            Text(
+                text = "Pas encore de compte ? S'inscrire",
+                color = EpicureanPrimary
+            )
         }
     }
 }

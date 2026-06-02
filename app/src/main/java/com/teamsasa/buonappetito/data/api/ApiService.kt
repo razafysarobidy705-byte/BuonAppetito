@@ -18,12 +18,12 @@ interface ApiService {
     @GET("menu")
     suspend fun getAllDishes(@Query("category") category: String?): List<Dish>
 
-    // Commandes
+    // Commandes (J2: Intégration table_number et commentaires via CheckoutRequest)
     @POST("orders")
-    suspend fun createOrder(@Body orderItems: List<CartItemRequest>): Order
+    suspend fun createOrder(@Body checkoutRequest: CheckoutRequest): Order
 
     @GET("orders/history")
-    suspend fun getOrderHistory(@Header("Authorization") token: String): List<Order>
+    suspend fun getOrderHistory(): List<Order>
 
     @GET("orders/{id}/track")
     suspend fun trackOrder(@Path("id") orderId: Long): Order

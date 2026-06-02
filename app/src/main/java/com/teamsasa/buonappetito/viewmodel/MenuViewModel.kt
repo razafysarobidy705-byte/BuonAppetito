@@ -5,9 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.teamsasa.buonappetito.data.model.Dish
 import com.teamsasa.buonappetito.data.repository.MenuRepository
 import kotlinx.coroutines.launch
-import kotlinx.flow.MutableStateFlow
-import kotlinx.flow.StateFlow
-import kotlinx.flow.asStateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class MenuViewModel(private val repository: MenuRepository) : ViewModel() {
 

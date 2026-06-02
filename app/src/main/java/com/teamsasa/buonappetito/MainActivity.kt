@@ -7,12 +7,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.teamsasa.buonappetito.data.local.SessionManager
 import com.teamsasa.buonappetito.ui.components.EpicureanBottomNavigation
 import com.teamsasa.buonappetito.ui.auth.LoginScreen
 import com.teamsasa.buonappetito.ui.auth.RegisterScreen
@@ -22,6 +25,8 @@ import com.teamsasa.buonappetito.ui.menu.MenuScreen
 import com.teamsasa.buonappetito.ui.cart.CartScreen
 import com.teamsasa.buonappetito.ui.profile.ProfileScreen
 import com.teamsasa.buonappetito.ui.order.OrderTrackingScreen
+import com.teamsasa.buonappetito.ui.order.OrderHistoryScreen
+import com.teamsasa.buonappetito.ui.order.QrScannerScreen
 import com.teamsasa.buonappetito.ui.theme.EpicureanTheme
 import com.teamsasa.buonappetito.viewmodel.*
 
@@ -30,20 +35,21 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             EpicureanTheme {
+                val context = LocalContext.current
+                val sessionManager = remember { SessionManager(context) }
                 val navController = rememberNavController()
+                val factory = remember { ViewModelFactory(sessionManager) }
                 
-                // Note: In a real app, you'd use a DI framework or a Factory to provide these ViewModels
-                // because they have constructor parameters.
-                val authViewModel: AuthViewModel = viewModel()
-                val menuViewModel: MenuViewModel = viewModel()
-                val cartViewModel: CartViewModel = viewModel()
-                val orderViewModel: OrderViewModel = viewModel()
+                val authViewModel: AuthViewModel = viewModel(factory = factory)
+                val menuViewModel: MenuViewModel = viewModel(factory = factory)
+                val cartViewModel: CartViewModel = viewModel(factory = factory)
+                val orderViewModel: OrderViewModel = viewModel(factory = factory)
 
                 var currentRoute by remember { mutableStateOf("home") }
 
                 Scaffold(
                     bottomBar = {
-                        val noBottomBarRoutes = listOf("login", "register")
+                        val noBottomBarRoutes = listOf("login", "register", "scanner")
                         if (currentRoute !in noBottomBarRoutes) {
                             EpicureanBottomNavigation(
                                 currentScreen = currentRoute,
@@ -61,14 +67,18 @@ class MainActivity : ComponentActivity() {
                 ) { paddingValues ->
                     NavHost(
                         navController = navController,
-                        startDestination = "login",
+                        startDestination = if (sessionManager.fetchAuthToken() != null) "home" else "login",
                         modifier = Modifier.padding(paddingValues)
                     ) {
                         composable("login") {
                             currentRoute = "login"
                             LoginScreen(
                                 viewModel = authViewModel,
-                                onLoginSuccess = { navController.navigate("home") },
+                                onLoginSuccess = { 
+                                    navController.navigate("home") {
+                                        popUpTo("login") { inclusive = true }
+                                    }
+                                },
                                 onNavigateToRegister = { navController.navigate("register") }
                             )
                         }
@@ -76,7 +86,11 @@ class MainActivity : ComponentActivity() {
                             currentRoute = "register"
                             RegisterScreen(
                                 viewModel = authViewModel,
-                                onRegisterSuccess = { navController.navigate("home") },
+                                onRegisterSuccess = { 
+                                    navController.navigate("home") {
+                                        popUpTo("register") { inclusive = true }
+                                    }
+                                },
                                 onNavigateToLogin = { navController.navigate("login") }
                             )
                         }
@@ -99,11 +113,21 @@ class MainActivity : ComponentActivity() {
                             currentRoute = "cart"
                             CartScreen(
                                 viewModel = cartViewModel,
-                                onCheckoutClick = {
-                                    // Simulation de commande passée
-                                    navController.navigate("track/1")
-                                }
+                                onCheckoutClick = { checkoutRequest ->
+                                    orderViewModel.checkout(checkoutRequest) { orderId ->
+                                        navController.navigate("track/$orderId")
+                                        cartViewModel.clearCart()
+                                    }
+                                },
+                                onNavigateToScanner = { navController.navigate("scanner") }
                             )
+                        }
+                        composable("scanner") {
+                            currentRoute = "scanner"
+                            QrScannerScreen(onQrCodeScanned = { tableInfo ->
+                                cartViewModel.setTableNumber(tableInfo)
+                                navController.popBackStack()
+                            })
                         }
                         composable("profile") {
                             currentRoute = "profile"
@@ -115,17 +139,31 @@ class MainActivity : ComponentActivity() {
                                             popUpTo(0)
                                         }
                                     }
-                                }
+                                },
+                                onNavigateToHistory = { navController.navigate("history") }
                             )
+                        }
+                        composable("history") {
+                            currentRoute = "profile"
+                            LaunchedEffect(Unit) {
+                                orderViewModel.loadOrderHistory()
+                            }
+                            OrderHistoryScreen(viewModel = orderViewModel)
                         }
                         composable(
                             route = "detail/{dishId}",
                             arguments = listOf(navArgument("dishId") { type = NavType.LongType })
                         ) { backStackEntry ->
-                            val dishId = backStackEntry.arguments?.getLong("dishId")
-                            val dish = menuViewModel.dishes.value.find { it.id == dishId }
-                            dish?.let {
-                                DishDetailScreen(dish = it, cartViewModel = cartViewModel, onBack = { navController.popBackStack() })
+                            val dishId = backStackEntry.arguments?.getLong("dishId") ?: 0L
+                            val dishes by menuViewModel.dishes.collectAsStateWithLifecycle()
+                            val dish = remember(dishes, dishId) { dishes.find { it.id == dishId } }
+                            
+                            if (dish != null) {
+                                DishDetailScreen(
+                                    dish = dish, 
+                                    cartViewModel = cartViewModel, 
+                                    onBack = { navController.popBackStack() }
+                                )
                             }
                         }
                         composable(

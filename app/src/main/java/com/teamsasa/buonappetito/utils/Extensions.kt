@@ -1,7 +1,13 @@
 package com.teamsasa.buonappetito.utils
 
-fun Double.formatPrice(): String {
-    // Formatage personnalisé pour l'Ariary (ex: 25 000 Ar)
-    return String.format("%,.0f Ar", this).replace(",", " ")
-}
+import java.text.NumberFormat
+import java.util.*
 
+/**
+ * Formate un Double en prix avec la devise Ariary (Ar)
+ */
+fun Double.formatPrice(): String {
+    val format = NumberFormat.getCurrencyInstance(Locale("fr", "MG"))
+    // Personnalisation pour afficher "Ar" au lieu du symbole standard si nécessaire
+    return format.format(this).replace("MGA", "Ar").replace("FMG", "Ar")
+}

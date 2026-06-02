@@ -7,15 +7,22 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
-    private val okHttpClient = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .build()
+    private fun createOkHttpClient(interceptor: AuthInterceptor?): OkHttpClient {
+        val builder = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+        
+        interceptor?.let {
+            builder.addInterceptor(it)
+        }
+        
+        return builder.build()
+    }
 
-    val apiService: ApiService by lazy {
-        Retrofit.Builder()
+    fun getApiService(interceptor: AuthInterceptor? = null): ApiService {
+        return Retrofit.Builder()
             .baseUrl(Constants.BASE_URL)
-            .client(okHttpClient)
+            .client(createOkHttpClient(interceptor))
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(ApiService::class.java)

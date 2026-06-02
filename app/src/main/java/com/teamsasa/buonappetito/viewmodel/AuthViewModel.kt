@@ -2,21 +2,25 @@ package com.teamsasa.buonappetito.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.teamsasa.buonappetito.data.local.SessionManager
 import com.teamsasa.buonappetito.data.model.LoginRequest
 import com.teamsasa.buonappetito.data.model.RegisterRequest
 import com.teamsasa.buonappetito.data.model.User
 import com.teamsasa.buonappetito.data.repository.AuthRepository
 import kotlinx.coroutines.launch
-import kotlinx.flow.MutableStateFlow
-import kotlinx.flow.StateFlow
-import kotlinx.flow.asStateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
-class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
+class AuthViewModel(
+    private val repository: AuthRepository,
+    private val sessionManager: SessionManager
+) : ViewModel() {
 
     private val _currentUser = MutableStateFlow<User?>(null)
     val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
 
-    private val _token = MutableStateFlow<String?>(null)
+    private val _token = MutableStateFlow<String?>(sessionManager.fetchAuthToken())
     val token: StateFlow<String?> = _token.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
@@ -25,6 +29,10 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    fun clearError() {
+        _error.value = null
+    }
+
     fun login(email: String, password: String, onLoginSuccess: () -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -32,9 +40,10 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
             val result = repository.login(LoginRequest(email, password))
             _isLoading.value = false
             result.onSuccess { response ->
-                if (response.success && response.user != null) {
+                if (response.success && response.user != null && response.token != null) {
                     _currentUser.value = response.user
                     _token.value = response.token
+                    sessionManager.saveAuthToken(response.token)
                     onLoginSuccess()
                 } else {
                     _error.value = response.message ?: "Erreur de connexion"
@@ -52,9 +61,10 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
             val result = repository.register(RegisterRequest(name, email, password))
             _isLoading.value = false
             result.onSuccess { response ->
-                if (response.success && response.user != null) {
+                if (response.success && response.user != null && response.token != null) {
                     _currentUser.value = response.user
                     _token.value = response.token
+                    sessionManager.saveAuthToken(response.token)
                     onRegisterSuccess()
                 } else {
                     _error.value = response.message ?: "Erreur d'inscription"
@@ -68,6 +78,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
     fun logout(onLogoutSuccess: () -> Unit) {
         _currentUser.value = null
         _token.value = null
+        sessionManager.clearSession()
         onLogoutSuccess()
     }
 }

@@ -2,14 +2,14 @@ package com.teamsasa.buonappetito.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.teamsasa.buonappetito.data.model.CartItemRequest
+import com.teamsasa.buonappetito.data.model.CheckoutRequest
 import com.teamsasa.buonappetito.data.model.Order
 import com.teamsasa.buonappetito.data.repository.OrderRepository
-import kotlinx.flow.MutableStateFlow
-import kotlinx.flow.StateFlow
-import kotlinx.flow.asStateFlow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class OrderViewModel(private val repository: OrderRepository) : ViewModel() {
 
@@ -21,17 +21,17 @@ class OrderViewModel(private val repository: OrderRepository) : ViewModel() {
 
     private var isTracking = false
 
-    fun loadOrderHistory(token: String) {
+    fun loadOrderHistory() {
         viewModelScope.launch {
-            repository.getOrderHistory(token).onSuccess { history ->
+            repository.getOrderHistory().onSuccess { history ->
                 _orderHistory.value = history
             }
         }
     }
 
-    fun checkout(itemsRequest: List<CartItemRequest>, onCheckoutSuccess: (Long) -> Unit) {
+    fun checkout(request: CheckoutRequest, onCheckoutSuccess: (Long) -> Unit) {
         viewModelScope.launch {
-            repository.createOrder(itemsRequest).onSuccess { order ->
+            repository.createOrder(request).onSuccess { order ->
                 _trackedOrder.value = order
                 onCheckoutSuccess(order.id)
             }

@@ -7,12 +7,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.teamsasa.buonappetito.data.model.Dish
 import com.teamsasa.buonappetito.ui.theme.*
 import com.teamsasa.buonappetito.utils.formatPrice
@@ -20,13 +23,18 @@ import com.teamsasa.buonappetito.viewmodel.MenuViewModel
 
 @Composable
 fun MenuScreen(viewModel: MenuViewModel, onDishClick: (Long) -> Unit) {
-    val dishes by viewModel.dishes.collectAsState()
+    val dishes: List<Dish> by viewModel.dishes.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize().background(EpicureanBg).padding(16.dp)) {
-        Text("Notre Carte", style = EpicureanTypography.titleLarge, color = TextDark, modifier = Modifier.padding(bottom = 16.dp))
+        Text(
+            text = "Notre Carte", 
+            style = EpicureanTypography.titleLarge, 
+            color = TextDark, 
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
 
         LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            items(dishes) { dish ->
+            items(dishes, key = { it.id }) { dish ->
                 Card(
                     modifier = Modifier.fillMaxWidth().height(100.dp),
                     shape = RoundedCornerShape(20.dp),
@@ -34,7 +42,14 @@ fun MenuScreen(viewModel: MenuViewModel, onDishClick: (Long) -> Unit) {
                     onClick = { onDishClick(dish.id) }
                 ) {
                     Row(modifier = Modifier.fillMaxSize().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.size(76.dp).clip(RoundedCornerShape(14.dp)).background(Color.LightGray))
+                        AsyncImage(
+                            model = dish.imageUrl,
+                            contentDescription = dish.name,
+                            modifier = Modifier.size(76.dp).clip(RoundedCornerShape(14.dp)).background(Color.LightGray),
+                            contentScale = ContentScale.Crop,
+                            error = painterResource(id = android.R.drawable.ic_menu_report_image),
+                            placeholder = painterResource(id = android.R.drawable.ic_menu_gallery)
+                        )
 
                         Spacer(modifier = Modifier.width(16.dp))
 

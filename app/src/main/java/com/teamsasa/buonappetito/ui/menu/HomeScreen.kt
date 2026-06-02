@@ -7,14 +7,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue // Import crucial pour corriger l'erreur sur 'by'
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.teamsasa.buonappetito.data.model.Dish
+import com.teamsasa.buonappetito.data.model.User
 import com.teamsasa.buonappetito.ui.theme.*
 import com.teamsasa.buonappetito.utils.formatPrice
 import com.teamsasa.buonappetito.viewmodel.AuthViewModel
@@ -23,8 +26,8 @@ import com.teamsasa.buonappetito.viewmodel.MenuViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(viewModel: MenuViewModel, authViewModel: AuthViewModel, onNavigateToDetail: (Long) -> Unit) {
-    val dishes by viewModel.dishes.collectAsState()
-    val currentUser by authViewModel.currentUser.collectAsState()
+    val dishes: List<Dish> by viewModel.dishes.collectAsStateWithLifecycle()
+    val currentUser: User? by authViewModel.currentUser.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -34,8 +37,16 @@ fun HomeScreen(viewModel: MenuViewModel, authViewModel: AuthViewModel, onNavigat
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(text = "Bonjour, ${currentUser?.name ?: "Client"}", style = EpicureanTypography.displayLarge, color = TextDark)
-        Text(text = "Qu'est-ce qui vous ferait plaisir aujourd'hui ?", style = EpicureanTypography.bodyLarge, modifier = Modifier.padding(top = 4.dp, bottom = 16.dp))
+        Text(
+            text = "Bonjour, ${currentUser?.name ?: "Client"}", 
+            style = EpicureanTypography.displayLarge, 
+            color = TextDark
+        )
+        Text(
+            text = "Qu'est-ce qui vous ferait plaisir aujourd'hui ?", 
+            style = EpicureanTypography.bodyLarge, 
+            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
+        )
 
         OutlinedTextField(
             value = "",
@@ -79,7 +90,7 @@ fun HomeScreen(viewModel: MenuViewModel, authViewModel: AuthViewModel, onNavigat
         Spacer(modifier = Modifier.height(12.dp))
 
         LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            items(dishes) { dish ->
+            items(dishes, key = { it.id }) { dish ->
                 PopularDishCard(dish = dish, onClick = { onNavigateToDetail(dish.id) })
             }
         }
@@ -95,7 +106,14 @@ fun PopularDishCard(dish: Dish, onClick: () -> Unit) {
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column {
-            Box(modifier = Modifier.fillMaxWidth().height(120.dp).background(Color.LightGray))
+            AsyncImage(
+                model = dish.imageUrl,
+                contentDescription = dish.name,
+                modifier = Modifier.fillMaxWidth().height(120.dp).background(Color.LightGray),
+                contentScale = ContentScale.Crop,
+                error = painterResource(id = android.R.drawable.ic_menu_report_image),
+                placeholder = painterResource(id = android.R.drawable.ic_menu_gallery)
+            )
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(text = dish.name, style = EpicureanTypography.titleMedium, color = TextDark)
                 Text(text = dish.description, style = EpicureanTypography.bodySmall, color = TextMuted, maxLines = 2)
