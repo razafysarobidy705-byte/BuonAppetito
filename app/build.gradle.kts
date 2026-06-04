@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.google.services)
+    alias(libs.plugins.kotlin.kapt)
 }
 
 android {
@@ -41,6 +41,9 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    kapt(libs.androidx.room.compiler)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
@@ -75,6 +78,9 @@ dependencies {
     // Firebase Messaging
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
+    
+    // Stripe
+    implementation(libs.stripe.android)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

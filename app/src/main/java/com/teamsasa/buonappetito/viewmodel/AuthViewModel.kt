@@ -54,11 +54,11 @@ class AuthViewModel(
         }
     }
 
-    fun register(name: String, email: String, password: String, onRegisterSuccess: () -> Unit) {
+    fun register(name: String, email: String, password: String,role: String = "client", onRegisterSuccess: () -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            val result = repository.register(RegisterRequest(name, email, password))
+            val result = repository.register(RegisterRequest(name, email, password, role))
             _isLoading.value = false
             result.onSuccess { response ->
                 if (response.success && response.user != null && response.token != null) {

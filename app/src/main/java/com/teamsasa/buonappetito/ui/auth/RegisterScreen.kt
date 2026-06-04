@@ -2,11 +2,11 @@ package com.teamsasa.buonappetito.ui.auth
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,15 +25,24 @@ fun RegisterScreen(
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    
-    // Correction : Type explicite ': Boolean' pour résoudre l'erreur de délégation
+    var selectedRole by remember { mutableStateOf("client") }
+
     val isLoading: Boolean by viewModel.isLoading.collectAsStateWithLifecycle()
     val error: String? by viewModel.error.collectAsStateWithLifecycle()
+
+    // Les rôles disponibles à l'inscription (selon le PDF)
+    val roles = listOf(
+        "client"   to "🍽️  Client",
+        "cook"     to "👨‍🍳  Cuisinier",
+        "server"   to "🛎️  Serveur",
+        "admin"    to "⚙️  Admin"
+    )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(EpicureanBg)
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -43,7 +52,7 @@ fun RegisterScreen(
             style = EpicureanTypography.displayLarge,
             color = EpicureanPrimary
         )
-        
+
         Spacer(modifier = Modifier.height(32.dp))
 
         OutlinedTextField(
@@ -78,12 +87,60 @@ fun RegisterScreen(
             singleLine = true
         )
 
-        // Affichage de l'erreur si elle existe
-        error?.let { errorMessage ->
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // ── Sélecteur de rôle ──────────────────────────────────────────
+        Text(
+            text = "Je suis...",
+            style = EpicureanTypography.titleMedium,
+            color = TextDark,
+            modifier = Modifier
+                .align(Alignment.Start)
+                .padding(bottom = 12.dp)
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White, RoundedCornerShape(16.dp))
+                .padding(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            roles.forEach { (roleKey, roleLabel) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            if (selectedRole == roleKey) EpicureanPrimary.copy(alpha = 0.08f)
+                            else Color.Transparent,
+                            RoundedCornerShape(12.dp)
+                        )
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = selectedRole == roleKey,
+                        onClick = { selectedRole = roleKey },
+                        colors = RadioButtonDefaults.colors(
+                            selectedColor = EpicureanPrimary
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = roleLabel,
+                        style = EpicureanTypography.titleMedium,
+                        color = if (selectedRole == roleKey) EpicureanPrimary else TextDark
+                    )
+                }
+            }
+        }
+
+        // Affichage erreur
+        error?.let {
             Text(
-                text = errorMessage,
+                text = it,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = 12.dp),
                 style = EpicureanTypography.bodySmall
             )
         }
@@ -91,8 +148,12 @@ fun RegisterScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = { viewModel.register(name, email, password, onRegisterSuccess) },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
+            onClick = {
+                viewModel.register(name, email, password, selectedRole, onRegisterSuccess)
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = EpicureanPrimary),
             enabled = !isLoading && name.isNotBlank() && email.isNotBlank() && password.length >= 6
@@ -104,10 +165,7 @@ fun RegisterScreen(
                     strokeWidth = 2.dp
                 )
             } else {
-                Text(
-                    text = "S'inscrire",
-                    style = EpicureanTypography.titleMedium
-                )
+                Text("S'inscrire", style = EpicureanTypography.titleMedium)
             }
         }
 
